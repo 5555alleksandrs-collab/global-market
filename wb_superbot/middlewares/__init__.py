@@ -1,2 +1,0 @@
-from .access import AccessMiddleware
-
