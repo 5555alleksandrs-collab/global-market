@@ -1,0 +1,23 @@
+[
+  {
+    "id": "b1",
+    "title": "Новая коллекция iPhone",
+    "subtitle": "Сила Pro. В каждом кадре.",
+    "imageUrl": "https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=1200&q=80",
+    "deepLink": "/category/iphone"
+  },
+  {
+    "id": "b2",
+    "title": "MacBook для идей",
+    "subtitle": "Тонкий. Мощный. Готов к работе.",
+    "imageUrl": "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=1200&q=80",
+    "deepLink": "/category/macbook"
+  },
+  {
+    "id": "b3",
+    "title": "Игры и VR",
+    "subtitle": "Steam Deck OLED · Meta Quest",
+    "imageUrl": "https://images.unsplash.com/photo-1592155931584-09ac28911638?w=1200&q=80",
+    "deepLink": "/catalog"
+  }
+]
