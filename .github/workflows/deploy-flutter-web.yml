@@ -1,0 +1,54 @@
+# Сборка Flutter Web и публикация на GitHub Pages.
+# После первого push: Settings → Pages → Source: GitHub Actions.
+
+name: Deploy Flutter Web to GitHub Pages
+
+on: [push, workflow_dispatch]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Pub get & build web
+        working-directory: 'Проект на Курсор/flutter_application_1'
+        run: |
+          set -e
+          flutter pub get
+          REPO_NAME="${GITHUB_REPOSITORY##*/}"
+          echo "base-href=/${REPO_NAME}/"
+          flutter build web --release --base-href "/${REPO_NAME}/" --no-wasm-dry-run
+          cp build/web/index.html build/web/404.html
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'Проект на Курсор/flutter_application_1/build/web'
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
