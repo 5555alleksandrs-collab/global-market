@@ -1,0 +1,40 @@
+# Запускать на Linux VPS (Ubuntu/Debian). На macOS Docker WireGuard обычно не подходит для продакшена.
+services:
+  wireguard:
+    image: lscr.io/linuxserver/wireguard:latest
+    container_name: wireguard
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+      # Укажите публичный IP или домен VPS; auto пробует определить сам
+      - SERVERURL=${SERVERURL:-auto}
+      - SERVERPORT=51820
+      - PEERS=${PEERS:-10}
+      - PEERDNS=1.1.1.1
+      - INTERNAL_SUBNET=10.13.13.0
+    volumes:
+      - ./wireguard-config:/config
+      - /lib/modules:/lib/modules:ro
+    ports:
+      - 51820:51820/udp
+    sysctls:
+      - net.ipv4.conf.all.src_valid_mark=1
+    restart: unless-stopped
+
+  bot:
+    build: ./bot
+    container_name: vpn-telegram-bot
+    env_file: .env
+    environment:
+      - WIREGUARD_CONFIG_DIR=/config
+      - BOT_DB_PATH=/data/bot.sqlite3
+    volumes:
+      - ./wireguard-config:/config:ro
+      - ./bot-data:/data
+    depends_on:
+      - wireguard
+    restart: unless-stopped
