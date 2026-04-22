@@ -1,5 +1,0 @@
-#!/usr/bin/env bash
-set -euo pipefail
-
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-exec "$SCRIPT_DIR/competitor_price_monitor/run_telegram_bot.sh" "$@"
