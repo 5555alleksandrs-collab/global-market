@@ -31,4 +31,5 @@ flutter:
   uses-material-design: true
   assets:
     - assets/mock/
+    - assets/catalog/showcase_bundled.json
     - assets/catalog/imported_products.json
