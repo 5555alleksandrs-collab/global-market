@@ -1,5 +1,0 @@
-python-telegram-bot>=21.0,<22
-gspread>=6.1,<7
-google-auth>=2.39,<3
-google-api-python-client>=2.130.0,<3
-python-dotenv>=1.0,<2
