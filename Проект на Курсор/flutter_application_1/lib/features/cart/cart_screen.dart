@@ -9,74 +9,197 @@ import '../../common/widgets/app_states.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../core/domain/models/cart_item.dart';
+import '../orders/widgets/order_history_body.dart';
 
-class CartScreen extends ConsumerWidget {
+class CartScreen extends ConsumerStatefulWidget {
   const CartScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CartScreen> createState() => _CartScreenState();
+}
+
+class _CartScreenState extends ConsumerState<CartScreen> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _confirmClear() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: const Text('Очистить корзину?'),
+        content: const Text('Все товары будут удалены из корзины.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Отмена')),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Очистить'),
+          ),
+        ],
+      ),
+    );
+    if (ok == true && mounted) {
+      await ref.read(cartProvider.notifier).clear();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final items = ref.watch(cartProvider);
     final fmt = NumberFormat.currency(locale: 'ru_RU', symbol: '₽', decimalDigits: 0);
     final total = items.fold<double>(0, (s, e) => s + e.lineTotal);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Корзина')),
-      body: items.isEmpty
-          ? const AppEmptyState(
-              title: 'Корзина пуста',
-              subtitle: 'Добавьте товары из каталога или главной.',
-              icon: Icons.shopping_bag_outlined,
-            )
-          : Column(
-              children: [
-                Expanded(
-                  child: ListView.separated(
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    itemCount: items.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
-                    itemBuilder: (context, i) {
-                      final it = items[i];
-                      return _CartTile(
-                        item: it,
-                        onMinus: () => ref.read(cartProvider.notifier).setQuantity(it.id, it.quantity - 1),
-                        onPlus: () => ref.read(cartProvider.notifier).setQuantity(it.id, it.quantity + 1),
-                        onRemove: () => ref.read(cartProvider.notifier).remove(it.id),
-                      );
-                    },
+      appBar: AppBar(
+        title: const Text('Корзина'),
+        bottom: TabBar(
+          controller: _tabController,
+          labelColor: AppColors.accent,
+          unselectedLabelColor: AppColors.textSecondary,
+          indicatorColor: AppColors.accent,
+          dividerColor: AppColors.border,
+          labelStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+          tabs: const [
+            Tab(text: 'Корзина', icon: Icon(Icons.shopping_cart_outlined, size: 20)),
+            Tab(text: 'Заказы', icon: Icon(Icons.receipt_long_outlined, size: 20)),
+          ],
+        ),
+        actions: [
+          if (items.isNotEmpty)
+            IconButton(
+              tooltip: 'Очистить',
+              onPressed: _confirmClear,
+              icon: const Icon(Icons.delete_sweep_outlined),
+            ),
+        ],
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          _buildCartPage(context, ref, items, fmt, total),
+          const OrderHistoryBody(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCartPage(
+    BuildContext context,
+    WidgetRef ref,
+    List<CartItem> items,
+    NumberFormat fmt,
+    double total,
+  ) {
+    if (items.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.shopping_bag_outlined, size: 52, color: AppColors.textSecondary),
+            const SizedBox(height: AppSpacing.md),
+            Text('Корзина пуста', style: Theme.of(context).textTheme.titleMedium, textAlign: TextAlign.center),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'Добавьте товары из каталога или главной. Вкладка «Заказы» вверху — история по дням и месяцам, фильтр и повтор заказа.',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            FilledButton(
+              onPressed: () => context.go('/catalog'),
+              child: const Text('Перейти в каталог'),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            FilledButton.tonal(
+              onPressed: () => _tabController.animateTo(1),
+              child: const Text('Открыть заказы'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        Expanded(
+          child: ListView.separated(
+            padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.md, AppSpacing.md, 8),
+            itemCount: items.length,
+            separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
+            itemBuilder: (context, i) {
+              final it = items[i];
+              return Dismissible(
+                key: ValueKey('cart-${it.id}'),
+                direction: DismissDirection.endToStart,
+                background: Container(
+                  alignment: Alignment.centerRight,
+                  padding: const EdgeInsets.only(right: 20),
+                  margin: const EdgeInsets.only(bottom: 2),
+                  decoration: BoxDecoration(
+                    color: AppColors.danger.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(18),
                   ),
+                  child: const Icon(Icons.delete_outline, color: AppColors.danger),
                 ),
-                Container(
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  decoration: const BoxDecoration(
-                    color: AppColors.surface,
-                    border: Border(top: BorderSide(color: AppColors.border)),
-                  ),
-                  child: SafeArea(
-                    top: false,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Row(
-                          children: [
-                            Text('Итого', style: Theme.of(context).textTheme.titleMedium),
-                            const Spacer(),
-                            Text(
-                              fmt.format(total),
-                              style: Theme.of(context).textTheme.titleLarge,
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        FilledButton(
-                          onPressed: () => context.push('/checkout'),
-                          child: const Text('Оформление заказа'),
-                        ),
-                      ],
+                onDismissed: (_) => ref.read(cartProvider.notifier).remove(it.id),
+                child: _CartTile(
+                  item: it,
+                  onMinus: () => ref.read(cartProvider.notifier).setQuantity(it.id, it.quantity - 1),
+                  onPlus: () => ref.read(cartProvider.notifier).setQuantity(it.id, it.quantity + 1),
+                  onRemove: () => ref.read(cartProvider.notifier).remove(it.id),
+                ),
+              );
+            },
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          decoration: const BoxDecoration(
+            color: AppColors.surface,
+            border: Border(top: BorderSide(color: AppColors.border)),
+          ),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Text('Итого', style: Theme.of(context).textTheme.titleMedium),
+                    const Spacer(),
+                    Text(
+                      fmt.format(total),
+                      style: Theme.of(context).textTheme.titleLarge,
                     ),
-                  ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${items.length} ${items.length == 1 ? 'позиция' : 'позиций'}',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+                ),
+                const SizedBox(height: 12),
+                FilledButton(
+                  onPressed: () => context.push('/checkout'),
+                  child: const Text('Оформление заказа'),
                 ),
               ],
             ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -186,8 +309,8 @@ class _QtyButton extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: onPressed,
-        child: Padding(
-          padding: const EdgeInsets.all(8),
+        child: const Padding(
+          padding: EdgeInsets.all(8),
           child: Icon(icon, size: 18),
         ),
       ),

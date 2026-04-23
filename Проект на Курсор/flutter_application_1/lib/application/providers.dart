@@ -227,6 +227,23 @@ class OrdersNotifier extends Notifier<List<Order>> {
     state = copy;
     await _persist();
   }
+
+  /// Перечитать заказы из SharedPreferences (после синка или pull-to-refresh).
+  void reloadFromPrefs() {
+    final raw = ref.read(localPrefsProvider).loadOrdersJson();
+    if (raw == null || raw.isEmpty) {
+      state = [];
+      return;
+    }
+    try {
+      final list = jsonDecode(raw) as List<dynamic>;
+      state = list
+          .map((e) => Order.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } catch (_) {
+      state = [];
+    }
+  }
 }
 
 final ordersProvider = NotifierProvider<OrdersNotifier, List<Order>>(OrdersNotifier.new);

@@ -21,6 +21,10 @@ dependencies:
   collection: ^1.18.0
   google_fonts: ^6.3.3
   url_launcher: ^6.3.1
+  excel: ^4.0.6
+  file_saver: ^0.3.1
+  path_provider: ^2.1.5
+  share_plus: ^13.1.0
 
 dev_dependencies:
   flutter_test:
