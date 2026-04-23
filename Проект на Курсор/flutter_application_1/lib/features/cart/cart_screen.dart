@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../application/providers.dart';
-import '../../common/widgets/app_states.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../core/domain/models/cart_item.dart';
@@ -309,8 +308,8 @@ class _QtyButton extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: onPressed,
-        child: const Padding(
-          padding: EdgeInsets.all(8),
+        child: Padding(
+          padding: const EdgeInsets.all(8),
           child: Icon(icon, size: 18),
         ),
       ),
